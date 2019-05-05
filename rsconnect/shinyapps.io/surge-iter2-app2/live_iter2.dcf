@@ -1,0 +1,10 @@
+name: live_iter2
+title:
+username:
+account: surge-iter2-app2
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 892862
+bundleId: 2043555
+url: https://surge-iter2-app2.shinyapps.io/live_iter2/
+when: 1556391250.39746
