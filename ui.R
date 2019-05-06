@@ -1,3 +1,10 @@
+# install.packages("shiny")
+# install.packages("shinyjs")
+# install.packages("data.table")
+# install.packages("ggplot2")
+# install.packages("grid")
+# install.packages("jpeg")
+
 library(shiny)
 library(shinyjs)
 library(data.table)

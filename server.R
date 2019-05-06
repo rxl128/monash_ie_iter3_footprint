@@ -47,7 +47,11 @@ server <- function(input, output, session)
   # Set up storage of information about user/user's household
   userinfo <- reactiveValues(
     num_persons = 0,
-    recycle_well = 0)
+    
+    recycle_well = 0,  # Three variables for tracking scorecard metrics. 0,1,2 =  bad/ok/good.
+    recycle_prop = 0,
+    waste_vol = 0,
+    recycle_vol = 0)
   
   # Set up flag storage - flag is true if recycled
   flag <- reactiveValues(
@@ -289,7 +293,7 @@ server <- function(input, output, session)
   # E-waste report card.
   
   
-  ### Overall status box
+  ################ Overall status box ####################
   # Background colour changer
   observe({
     ### Calculate recycled %.
@@ -342,7 +346,66 @@ server <- function(input, output, session)
     }
   }, deleteFile = FALSE)
   
-  # text
+  
+  
+  ################## Recycling % box ######################
+  observe({
+    ### Calculate recycled %.
+    # Grab recycled flags, create a list from it, order it by ascending key, unlist it, and convert to integer
+    recycled_flag = c(as.integer(unlist(reactiveValuesToList(flag)[order(names(reactiveValuesToList(flag)))])))
+    num_items = c(unlist(reactiveValuesToList(userdata)[order(names(reactiveValuesToList(userdata)))], use.names = FALSE))
+    vol_items = c(Reduce("+", desktop), # Ensure this list is sorted
+                  Reduce("+", laptop),
+                  Reduce("+", mobile),
+                  Reduce("+", tv))
+    
+    total_vol = sum(num_items*vol_items) # Total volume
+    recycled_vol = sum(recycled_flag*num_items*vol_items) # recycle total
+    
+    recycled_pc = ifelse(total_vol==0, 0, recycled_vol/total_vol)
+    
+    
+    # Colour background based on proportion they recycle compared to reference targets.
+    if (recycled_pc > avginfo$recycle_pc_global){
+      runjs(sprintf("
+                    document.getElementById('%s').style.backgroundColor = '%s';
+                    ", "p4_box_recycle_pc", "#ccffcc"))
+      userinfo$recycle_prop = 2
+    }else if (recycled_pc > avginfo$recycle_pc_aus){
+      runjs(sprintf("
+                    document.getElementById('%s').style.backgroundColor = '%s';
+                    ", "p4_box_recycle_pc", "#ffff99"))
+      userinfo$recycle_prop = 1
+    } else{
+      runjs(sprintf("
+                    document.getElementById('%s').style.backgroundColor = '%s';
+                    ", "p4_box_recycle_pc", "#ffcccc"))
+      userinfo$recycle_prop = 0
+    }
+
+  })
+  
+  # Write recycle% box contents..
+  # Image
+  # output$p4_img_status <- renderImage({
+  #   if(userinfo$recycle_prop == 0){
+  #     return(list(
+  #       # src = "www/mobile_small.png",
+  #       # contentType = "image/png"
+  #     ))
+  #   } else if(userinfo$recycle_prop == 1){
+  #     return(list(
+  #       # src = "www/laptop_small.png",
+  #       # contentType = "image/png"
+  #     ))
+  #   } else if(userinfo$recycle_prop == 2){
+  #     return(list(
+  #       # src = "www/tv_small.png",
+  #       # contentType = "image/png"
+  #     ))
+  #   }
+  # }, deleteFile = FALSE)
+  
   
   
   ###################################
