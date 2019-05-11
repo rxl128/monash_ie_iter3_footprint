@@ -1,10 +1,3 @@
-# install.packages("shiny")
-# install.packages("shinyjs")
-# install.packages("data.table")
-# install.packages("ggplot2")
-# install.packages("grid")
-# install.packages("jpeg")
-
 library(shiny)
 library(shinyjs)
 library(data.table)
@@ -19,6 +12,47 @@ ui <- fluidPage(
   tags$style(type='text/css', "nav.navbar.navbar-default.navbar-static-top{border-color: #f5f5f5;background-color: #f5f5f5;}"),
   tags$style(type='text/css', ".navbar{min-height: 0px; margin-bottom: 0px;}"),
   tags$style(type='text/css', ".navbar-brand{height: 0px; padding: 0px 0px;}"),
+
+  #Styling of elements.
+  tags$style(HTML("
+    input:invalid 
+    {
+      background-color: #FFCCCC;
+    }
+    
+    #p4_box_status
+    {
+      border-top: 2px solid black;
+      border-left: 2px solid black;
+      border-right: 2px solid black;
+    }
+    
+    #p4_box_mid
+    {
+      border-left: 2px solid black;
+      border-right: 2px solid black;
+      border-bottom: 1px solid black;
+    }
+
+    #p4_box_recycle_pc
+    {
+      border-left: 2px solid black;
+      border-bottom: 2px solid black;
+      border-right: 1px solid black;
+    }
+
+    #p4_box_waste
+    {
+      border-bottom: 2px solid black;
+      border-right: 1px solid black;
+    }
+    
+    #p4_box_recycle_vol
+    {
+      border-bottom: 2px solid black;
+      border-right: 2px solid black;
+    }
+                  ")),
   
   # # CSS styling. Not in use, couldn't eliminate gaps in ui.
   # tags$style(HTML("
@@ -40,7 +74,7 @@ ui <- fluidPage(
     tabPanel
     (
       title = NULL, value = "page1",
-      h1("What is my household's e-waste footprint?", align = "center"),
+      h1("What is my household's E-waste footprint?", align = "center"),
       
       # Household size row
       fluidRow
@@ -60,7 +94,7 @@ ui <- fluidPage(
         )
       ),
       
-      h3("Take a look around and list down how many of these common electronics are used.", align = "center"),
+      h3("Take a look around your household. How many of these electronics are used?", align = "center"),
       
       # Mobile phone and Desktop row
       fluidRow
@@ -146,7 +180,8 @@ ui <- fluidPage(
           width = 12,
           style = "padding-top: 40px;",
           align="center",
-          actionButton("btn_next1", "Next", width = "25%", style = "background-color:green; color:white; font-weight:bold")
+          actionButton("btn_next1", "Next", width = "25%", style = "background-color:green; color:white; font-weight:bold"),
+          div(textOutput("p1_txt_input_valid"), style="color:red;", align = "left")
         )
       )
     ),
@@ -161,7 +196,7 @@ ui <- fluidPage(
       h1("How did it get here?", align = "center"),
       textOutput("p2_test_out"),
       
-      actionButton("btn_prev2", "Previous", width = "10%", style = "background-color:green; color:white; font-weight:bold"),
+      actionButton("btn_prev2", "Back", width = "10%", style = "background-color:green; color:white; font-weight:bold"),
       actionButton("btn_next2", "Next", width = "10%", style = "background-color:green; color:white; font-weight:bold")
     ),
     
@@ -401,14 +436,14 @@ ui <- fluidPage(
           width = 2,
           style = "padding-top: 0px; padding-bottom: 20px;",
           align="left",
-          actionButton("btn_prev3", "Previous", width = "80%", style = "background-color:grey; color:white; font-weight:bold")
+          actionButton("btn_prev3", "Back", width = "80%", style = "background-color:grey; color:white; font-weight:bold")
         ),
         column
         (
           width = 8,
           style = "padding-top: 0px; padding-bottom: 20px;",
           align = "center",
-          actionButton("btn_next3", "Next", width = "39%", style = "background-color:green; color:white; font-weight:bold")
+          actionButton("btn_next3", "Your Scorecard", width = "39%", style = "background-color:green; color:white; font-weight:bold")
         )
       )
     ),
@@ -418,128 +453,87 @@ ui <- fluidPage(
     tabPanel
     (
       title = NULL, value = "page4",
-      h1("Your household's e-waste report card", align = "center"),
-      
-      # Overall status and recycle% row.
+      # h1("Your household's E-waste report card", align = "center"),
+
+      # Overall status box.
       fluidRow
       (
         # Overall status box.
-        column
-        (
-          id = "p4_box_status",
-          width = 6,
-          align="center",
-          h2("How good are we doing?"),
-          imageOutput("p4_img_status"),
-          div(textOutput("p4_txt_status"))
-        ),
+        id = "p4_box_status",
+        style = "padding-left: 10px; padding-right: 10px;",
+        align="center",
         
+        HTML("<h1><b>Your Household's E-waste Report Card</b></hl>"),
+        HTML("<div style='height: 170px;padding-top:20px;'>"),
+        imageOutput("p4_img_status"),
+        HTML("</div>"),
+        htmlOutput("p4_txt_status"),
+        plotOutput("plot_status", height="300px", width = "100%")
+      ),
+      
+      fluidRow
+      (
+        id = "p4_box_mid",
+        align="center",
+        HTML("<h2><b>Over the next five years...</b></h3>")
+      ),
+      
+      fluidRow
+      (
+          
         # Recycling % box
         column
         (
           id = "p4_box_recycle_pc",
-          width = 6,
+          width = 4,
           align="center",
+          style = "padding-left: 10px; padding-right: 10px; height: 330px;",
           
-          # User recycle %
-          column(
-            width = 6,
-            style = "padding-left: 0px; padding-right: 2px;",
-            align="center",
-            h3("You recycle"),
-            htmlOutput("p4_txt_user_recycle_pc"),
-            h3("of your e-waste")
+          HTML("<h3>You will recycle </h3>"),
+          htmlOutput("p4_txt_user_recycle_pc"),
+          HTML("<h3 style='margin-top:10px'>of your E-waste</h3>"),
+          htmlOutput("p4_txt_user_recycle_pc_2")
           ),
-
-          # Average recycle %
-          column(
-            width = 6,
-            style = "padding-left: 2px; padding-right: 0px;",
-            align="center",
-            h3("Australians recycle"),
-            htmlOutput("p4_txt_avg_recycle_pc"), # 8.2%, based on e-waste sp factsheet.
-            h3("of their e-waste")
-          ),
-          
-          "Australians are extremely poor at recycling e-waste. Internationally, an average of x% of e-waste is recycled, with some countries such as y recycling as much as z%!"
-        )
-      ),
-      
-      # Waste volume and recycle volume row.
-      fluidRow
-      (
-        align="center",
-        h3("Over the next five years..."),
+        
         # Waste volume box.
         column
         (
           id = "p4_box_waste",
-          width = 6,
+          width = 4,
           align="center",
+          style = "padding-left: 2px; padding-right: 2px;  height: 330px;",
           
-          # User waste volume
-          column(
-            width = 6,
-            style = "padding-left: 0px; padding-right: 2px;",
-            align="center",
-            HTML("<h3><br/>Your household will send</h3>"),
-            htmlOutput("p4_txt_user_waste"),
-            h3("of e-waste to landfill")
+          HTML("<h3>Your household will send</h3>"),
+          htmlOutput("p4_txt_user_waste"),
+          HTML("<h3 style='margin-top:10px'>of E-waste to landfill</h3>"),
+          htmlOutput("p4_txt_user_waste_2")
           ),
-          
-          # Average waste volume
-          column(
-            width = 6,
-            style = "padding-left: 2px; padding-right: 0px;",
-            align="center",
-            h3("An average household your size will send"),
-            htmlOutput("p4_txt_avg_waste"),
-            h3("of e-waste to landfill")
-          ),
-          
-          "Electronic waste has many components that are toxic. This can cause severe damage to the environment, such as..."
-          
-        ),
         
         # Recycling volume box
         column
         (
           id = "p4_box_recycle_vol",
-          width = 6,
+          width = 4,
           align="center",
+          style = "padding-left: 2px; padding-right: 2px;  height: 330px;",
           
-          # User recycle %
-          column(
-            width = 6,
-            style = "padding-left: 0px; padding-right: 2px;",
-            align="center",
-            HTML("<h3><br/>Your household will create</h3>"),
-            htmlOutput("p4_txt_user_recycle_vol"),
-            h3("of recovered resources")
-          ),
-          
-          # Average recycle %
-          column(
-            width = 6,
-            style = "padding-left: 2px; padding-right: 0px;",
-            align="center",
-            h3("An average household your size will create"),
-            htmlOutput("p4_txt_avg_recycle_vol"),
-            h3("of recovered resources")
-          ),
-          
-          "Resources recovered from e-waste are used directly in the manufacture of new goods. The volume of materials recovered from your e-waste can create...",
-          htmlOutput("p4_user_create") # divide volume by weight of some electronic goods/etc and show output.
+          HTML("<h3>Your household will create</h3>"),
+          htmlOutput("p4_txt_user_recycle_vol"),
+          HTML("<h3 style='margin-top:10px'>of recovered resources</h3>"),
+          htmlOutput("p4_txt_user_recycle_vol_2")
+          # htmlOutput("p4_user_create") # divide volume by weight of some electronic goods/etc and show output.
         )
       ),
+    
+      # Page controls
       fluidRow
       (
         column
         (
           width = 2,
-          style = "padding-top: 0px; padding-bottom: 20px;",
+          style = "padding-top: 10px; padding-bottom: 20px;",
           align="left",
-          actionButton("btn_prev4", "Previous", width = "80%", style = "background-color:grey; color:white; font-weight:bold")
+          actionButton("btn_prev4", "Back", width = "80%", style = "background-color:grey; color:white; font-weight:bold")
         )
       )
     )

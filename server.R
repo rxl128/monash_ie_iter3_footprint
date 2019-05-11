@@ -3,8 +3,11 @@
 # Add other recycling items (ie. large appliances, small appliances)
 # Comparison to "Average"
 
+# Load data/models about average household
+load("avg_household.RData")
+
 # Create functions.
-input_val = function(x){
+input_inval = function(x){
   return(is.na(x) | x<0 | !is.numeric(x))
 }
 
@@ -47,11 +50,24 @@ server <- function(input, output, session)
   # Set up storage of information about user/user's household
   userinfo <- reactiveValues(
     num_persons = 0,
-    
-    recycle_well = 0,  # Three variables for tracking scorecard metrics. 0,1,2 =  bad/ok/good.
     recycle_prop = 0,
     waste_vol = 0,
-    recycle_vol = 0)
+    recycle_vol = 0,
+    
+    f_recycle_well = 0,  # Three variables for tracking scorecard metrics. 0,1,2 =  bad/ok/good.
+    f_recycle_prop = 0,
+    f_waste_vol = 0,
+    f_recycle_vol = 0)
+  
+  # Store average household E-waste statistics, based on uers' household size.
+  avginfo <- reactiveValues(
+    recycle_pc_aus = 0.064,
+    recycle_pc_global = 0.2,
+    recycle_vol = 0, # Will be calculated below.
+    waste_vol = 0 # Will be calculated below.
+  )
+  
+  
   
   # Set up flag storage - flag is true if recycled
   flag <- reactiveValues(
@@ -104,14 +120,6 @@ server <- function(input, output, session)
   # A quick look at GoodGuys and Officeworks shows these range from 1.6-1.8kg
   
 
-  # Store average per person e-waste statistics
-  avginfo <- list(
-    recycle_pc_aus = 0.064,
-    recycle_pc_global = 0.2,
-    recycle_vol = 1, # Volume of recycling per person per 5 years.
-    waste_vol = 9 # Volume of waste generated per person per 5 years.
-  )
-  
   
   ###################################
   ############# Page 2 ##############
@@ -133,8 +141,8 @@ server <- function(input, output, session)
   ### Heading text output ###
   output$p3_txt_heading <- renderUI({HTML(paste0("<h2>Your household will generate ",
                                                  "<br/><b><font color='red'>", round(plot_param$max_y,1), "kg </font></b>",
-                                                 "<br/>of e-waste in the next five years</h2>",
-                                                 "<h3><font color='green'>Now, let's do some recycling!</h3>"))})
+                                                 "<br/>of E-waste in the next five years</h2>",
+                                                 "<h3><font color='green'>Commit to recycling and see its impact below!</h3>"))})
   
   # Show correct ui objects based on if being recycled or not.
   show("p3_div_mobile_no_recycle")
@@ -152,7 +160,7 @@ server <- function(input, output, session)
   txt_mobile = reactive({
     HTML(paste0("Recyclable: ", round(userdata$mobile * mobile$recyclable,2), " kg",
                 "<br/> Non-recyclable: ",  round(userdata$mobile * mobile$non_recyclable,2), " kg",
-                "<br/><p style='font-size:13px'> <a href='http://recyclewell.tk/how-to-recycle-it-new/' target='_blank'>How do I recycle this?</a></p>"))
+                "<br/><p style='font-size:13px; border-style: dashed; border-width: 1px; border-color: #0645AD;'> <a href='http://recyclewell.tk/how-to-recycle-it-new/' target='_blank'>How do I recycle this?</a></p>"))
   })
   
   output$p3_txt_mobile_no_recycle <- renderUI({txt_mobile()})
@@ -162,7 +170,7 @@ server <- function(input, output, session)
   txt_tv = reactive({
     HTML(paste0("Recyclable: ", round(userdata$tv * tv$recyclable,2), " kg",
                 "<br/> Non-recyclable: ", round(userdata$tv * tv$non_recyclable,2), " kg",
-                "<br/><p style='font-size:13px'><a href='http://recyclewell.tk/how-to-recycle-it-new/' target='_blank'>How do I recycle this?</a></p>"))
+                "<br/><p style='font-size:13px; border-style: dashed; border-width: 1px; border-color: #0645AD;'><a href='http://recyclewell.tk/how-to-recycle-it-new/' target='_blank'>How do I recycle this?</a></p>"))
   })
   
   output$p3_txt_tv_no_recycle <- renderUI({txt_tv()})
@@ -172,7 +180,7 @@ server <- function(input, output, session)
   txt_desktop = reactive({
     HTML(paste0("Recyclable: ", round(userdata$desktop * desktop$recyclable,2), " kg",
                 "<br/> Non-recyclable: ", round(userdata$desktop * desktop$non_recyclable,2), " kg",
-                "<br/><p style='font-size:13px'><a href='http://recyclewell.tk/how-to-recycle-it-new/' target='_blank'>How do I recycle this?</a></p>"))
+                "<br/><p style='font-size:13px; border-style: dashed; border-width: 1px; border-color: #0645AD;'><a href='http://recyclewell.tk/how-to-recycle-it-new/' target='_blank'>How do I recycle this?</a></p>"))
   })
   
   output$p3_txt_desktop_no_recycle <- renderUI({txt_desktop()})
@@ -182,7 +190,7 @@ server <- function(input, output, session)
   txt_laptop = reactive({
     HTML(paste0("Recyclable: ", round(userdata$laptop * laptop$recyclable,2), " kg",
                 "<br/> Non-recyclable: ", round(userdata$laptop * laptop$non_recyclable,2), " kg",
-                "<br/><p style='font-size:13px'><a href='http://recyclewell.tk/how-to-recycle-it-new/' target='_blank'>How do I recycle this?</a></p>"))
+                "<br/><p style='font-size:13px; border-style: dashed; border-width: 1px; border-color: #0645AD;'><a href='http://recyclewell.tk/how-to-recycle-it-new/' target='_blank'>How do I recycle this?</a></p>"))
   })
   
   output$p3_txt_laptop_no_recycle <- renderUI({txt_laptop()})
@@ -255,7 +263,7 @@ server <- function(input, output, session)
       geom_ribbon(aes(ymin=volume, ymax=plot_param$max_y), fill="white") +
       scale_y_continuous(limits=c(0,plot_param$max_y), expand=c(0,0))+
       scale_x_continuous(limits=c(0,1), expand=c(0,0)) +
-      labs(x="", y="Kilograms of e-waste") + 
+      labs(x="", y="Kilograms of E-waste") + 
       theme(text = element_text(size=17),
             axis.title.y = element_text(margin = margin(r = 10)),
             axis.text.x = element_blank(),
@@ -292,62 +300,153 @@ server <- function(input, output, session)
   ###################################
   # E-waste report card.
   
-  
-  ################ Overall status box ####################
-  # Background colour changer
-  observe({
-    ### Calculate recycled %.
-    # Grab recycled flags, create a list from it, order it by ascending key, unlist it, and conver to integer
-    recycled_flag = c(as.integer(unlist(reactiveValuesToList(flag)[order(names(reactiveValuesToList(flag)))])))
-    num_items = c(unlist(reactiveValuesToList(userdata)[order(names(reactiveValuesToList(userdata)))], use.names = FALSE))
-    vol_items = c(Reduce("+", desktop), # Ensure this list is sorted
-                  Reduce("+", laptop),
-                  Reduce("+", mobile),
-                  Reduce("+", tv))
+    ################ Overall status box ####################
+    # Background colour changer
+    observe({
 
-    total_vol = sum(num_items*vol_items)
-    recycled_vol = sum(recycled_flag*num_items*vol_items)
+      # Generate users' average rating across three recycling metrics (recycle %, waste volume, recycled materials volume)
+     userinfo$f_recycle_well = mean(c(userinfo$f_recycle_prop, userinfo$f_waste_vol, userinfo$f_recycle_vol))
 
-    recycled_pc = ifelse(total_vol==0, 0, recycled_vol/total_vol)
+      # Colour background and generate text based on overall e-waste management status.
+      if (userinfo$f_recycle_well >= 1.5){
+        # Good
+        runjs(sprintf("
+              document.getElementById('%s').style.backgroundColor = '%s';
+          ", "p4_box_status", "#ccffcc"))
+        runjs(sprintf("
+              document.getElementById('%s').style.backgroundColor = '%s';
+          ", "p4_box_mid", "#ccffcc"))
+
+        output$p4_txt_status = renderUI({HTML(paste0("<h2>You're doing fantastic!</br></h2>",
+                                                     "<div style='font-size:20px;line-height:24px;'>","You are doing much better than the vast majority of households,</br>both in Australia and globally!",
+                                                     "</br><br>Thank you for helping in the fight against E-waste!</div>"
+                                                     ))})
+        
+      }else if (userinfo$f_recycle_well >= 0.5) {
+        # Average
+        runjs(sprintf("
+              document.getElementById('%s').style.backgroundColor = '%s';
+          ", "p4_box_status", "#ffff99"))
+        runjs(sprintf("
+              document.getElementById('%s').style.backgroundColor = '%s';
+          ", "p4_box_mid", "#ffff99"))
+        
+        output$p4_txt_status = renderUI({HTML(paste0("<h2>You're doing alright.</br></h2>",
+                                                     "<div style='font-size:20px;line-height:24px;'>","You've taken some steps to manage your E-waste properly,</br> but there is still much more you can do!"
+                                                     ))})
+
+      }else{
+        runjs(sprintf("
+              document.getElementById('%s').style.backgroundColor = '%s';
+          ", "p4_box_status", "#ffcccc"))
+        runjs(sprintf("
+              document.getElementById('%s').style.backgroundColor = '%s';
+          ", "p4_box_mid", "#ffcccc"))
+        
+        output$p4_txt_status = renderUI({HTML(paste0("<h2>You're not doing so great.</br></h2>",
+                                                     "<div style='font-size:20px;line-height:24px;'>","Your habits are contributing to the e-Waste problem,<br>and you're doing poorly compared to other households in Australia",
+                                                     "</br><br>Please join us in the global fight against E-waste!</div>"
+                                                     ))})
+        
+
+      }
+    })
+
+    # Render status box contents.
+    # Image
+    output$p4_img_status <- renderImage({
+      if(userinfo$f_recycle_well < 0.5){
+        return(list(
+          src = "www/bad.png",
+          contentType = "image/png",
+          width = 150,
+          height = 150
+        ))
+      } else if(userinfo$f_recycle_well < 1.5){
+        return(list(
+          src = "www/ok.png",
+          contentType = "image/png",
+          width = 150,
+          height = 150
+        ))
+      } else {
+        return(list(
+          src = "www/good.png",
+          contentType = "image/png",
+          width = 150,
+          height = 150
+        ))
+      }
+    }, deleteFile = FALSE)
 
     
-    # Colour background based on how good they are recycling.
-    if (recycled_pc > avginfo$recycle_pc_global){
-      runjs(sprintf("
-            document.getElementById('%s').style.backgroundColor = '%s';
-        ", "p4_box_status", "#ccffcc"))
-      userinfo$recycle_well = 2
-    }else{
-      runjs(sprintf("
-            document.getElementById('%s').style.backgroundColor = '%s';
-        ", "p4_box_status", "#ffcccc"))
-      userinfo$recycle_well = 0
-    }
-  })
-  
-  # Render status box contents.
-  # Image
-  output$p4_img_status <- renderImage({
-    if(userinfo$recycle_well == 0){
-      return(list(
-        src = "www/mobile_small.png",
-        contentType = "image/png"
-      ))
-    } else if(userinfo$recycle_well == 1){
-      return(list(
-        src = "www/laptop_small.png",
-        contentType = "image/png"
-      ))
-    } else if(userinfo$recycle_well == 2){
-      return(list(
-        src = "www/tv_small.png",
-        contentType = "image/png"
-      ))
-    }
-  }, deleteFile = FALSE)
-  
-  
-  
+    ### Render status plot
+    output$plot_status = renderPlot({
+      
+      ### Generate data
+      df_status = data.table(metric = factor(levels=c("Recycling %", "E-waste to Landfill (kg)", "Recovered Resources (kg)", "gold", "blue")),
+                             group = factor(levels=c("You", "Australia", "Target")),
+                             value = numeric(),
+                             norm_value = numeric(),
+                             border = factor(levels=c("red", "orange", "green4", "gold", "blue")))
+
+      border_lookup = c("red","orange","green4")
+      
+      # Recycle % data
+      tmp_tar_val = 2*avginfo$recycle_pc_global
+      tmp_max = max(userinfo$recycle_prop, avginfo$recycle_pc_aus, tmp_tar_val)
+      
+      tmp_you = list("Recycling %", "You", round(userinfo$recycle_prop*100,0), userinfo$recycle_prop/tmp_max, border_lookup[userinfo$f_recycle_prop+1])
+      tmp_aus = list("Recycling %", "Australia", round(avginfo$recycle_pc_aus*100,0), avginfo$recycle_pc_aus/tmp_max, "gold")
+      tmp_tar = list("Recycling %", "Target", round(tmp_tar_val*100,0), tmp_tar_val/tmp_max, "blue")
+      
+      df_status = rbind(df_status, tmp_you, tmp_aus, tmp_tar)
+      
+      # Waste volume data
+      tmp_tar_val = avginfo$waste_vol/(1-avginfo$recycle_pc_aus)*(1-avginfo$recycle_pc_global*2)
+      tmp_max = max(userinfo$waste_vol, avginfo$waste_vol, tmp_tar_val)
+      
+      tmp_you = list("E-waste to Landfill (kg)", "You", round(userinfo$waste_vol,1), userinfo$waste_vol/tmp_max, border_lookup[userinfo$f_waste_vol+1])
+      tmp_aus = list("E-waste to Landfill (kg)", "Australia", round(avginfo$waste_vol,1), avginfo$waste_vol/tmp_max, "gold")
+      tmp_tar = list("E-waste to Landfill (kg)", "Target", round(tmp_tar_val,1), tmp_tar_val/tmp_max, "blue")
+      
+      df_status = rbind(df_status, tmp_you, tmp_aus, tmp_tar)
+      
+      # Recycle volume data
+      tmp_tar_val = 2*(avginfo$recycle_vol/avginfo$recycle_pc_aus*avginfo$recycle_pc_global)
+      tmp_max = max(userinfo$recycle_vol, avginfo$recycle_vol, tmp_tar_val)
+      
+      tmp_you = list("Recovered Resources (kg)", "You", round(userinfo$recycle_vol,1), userinfo$recycle_vol/tmp_max, border_lookup[userinfo$f_recycle_vol+1])
+      tmp_aus = list("Recovered Resources (kg)", "Australia", round(avginfo$recycle_vol,1), avginfo$recycle_vol/tmp_max, "gold")
+      tmp_tar = list("Recovered Resources (kg)", "Target", round(tmp_tar_val,1), tmp_tar_val/tmp_max, "blue")
+      
+      df_status = rbind(df_status, tmp_you, tmp_aus, tmp_tar)
+      
+      # Grouped
+      ggplot(df_status, aes(x=metric, y=norm_value, fill=group, colour=border)) + 
+        geom_bar(position = position_dodge(0.5),width=0.5, stat="identity", size=1.2) +
+        scale_fill_manual(values=c("You" = "gray90", "Australia" = "gold", "Target" = "blue")) + 
+        scale_colour_identity() +
+        geom_text(aes(label=value), position=position_dodge(width=0.5), vjust=-0.25, color="black", size=5)+
+        scale_y_continuous(limits=c(0,1.1))+
+        theme(axis.ticks = element_blank(),
+              axis.title = element_blank(),
+              axis.text.y = element_blank(),
+              axis.line.y = element_blank(),
+              legend.title = element_blank(),
+              panel.background = element_blank(),
+              plot.background = element_blank(),
+              legend.background = element_blank(),
+              
+              legend.position = "bottom",
+              legend.key.size = unit(1.3, "line"),
+              legend.text = element_text(size = 17, margin=margin(r = 30, unit = "pt")),
+              axis.text.x =  element_text(size = 17)
+              )
+
+    }, bg="transparent")
+    
+
   ################## Recycling % box ######################
   observe({
     ### Calculate recycled %.
@@ -362,49 +461,189 @@ server <- function(input, output, session)
     total_vol = sum(num_items*vol_items) # Total volume
     recycled_vol = sum(recycled_flag*num_items*vol_items) # recycle total
     
-    recycled_pc = ifelse(total_vol==0, 0, recycled_vol/total_vol)
+    recycled_pc = ifelse(total_vol==0, 0, recycled_vol/total_vol) # User's recycled %
     
+    userinfo$recycle_prop = recycled_pc
     
-    # Colour background based on proportion they recycle compared to reference targets.
-    if (recycled_pc > avginfo$recycle_pc_global){
+    # Colour background and generate text based on comparison to reference targets.
+    if (recycled_pc > 2*avginfo$recycle_pc_global){
+      # Good
       runjs(sprintf("
                     document.getElementById('%s').style.backgroundColor = '%s';
                     ", "p4_box_recycle_pc", "#ccffcc"))
-      userinfo$recycle_prop = 2
-    }else if (recycled_pc > avginfo$recycle_pc_aus){
+      
+      # Text outputs
+      output$p4_txt_user_recycle_pc = renderUI({HTML(paste0("<h3 style='color:DarkGreen; margin-top:10px; margin-bottom:0px'><b>", round(recycled_pc*100,0), "%</b></h3>"))})
+
+      
+      output$p4_txt_user_recycle_pc_2 = renderUI({HTML(paste0("<div style='font-size:16px;'>",
+                                                              "</br>You are recycling more than double the global average of <b>", round(avginfo$recycle_pc_global*100,0), "%</b>, ",
+                                                              "and far above Australia's extremely poor recycling rate of <b>", round(avginfo$recycle_pc_aus*100,0), "%</b>.</br>",
+                                                              "<span style='font-size:20px; line-height:40px;'><b>", "Well done!", "</b></span></div>"))})
+      
+      userinfo$f_recycle_prop = 2
+    }else if (recycled_pc > avginfo$recycle_pc_global){
+      # Average
       runjs(sprintf("
                     document.getElementById('%s').style.backgroundColor = '%s';
                     ", "p4_box_recycle_pc", "#ffff99"))
-      userinfo$recycle_prop = 1
-    } else{
+      
+      
+      output$p4_txt_user_recycle_pc = renderUI({HTML(paste0("<h3 style='color:DarkOrange; margin-top:10px; margin-bottom:0px'><b>", round(recycled_pc*100,0), "%</b></h3>"))})
+
+      output$p4_txt_user_recycle_pc_2 = renderUI({HTML(paste0("<div style='font-size:16px;'>",
+                                                              "</br>This is higher than Australia's extremely poor recycling rate of <b>", round(avginfo$recycle_pc_aus*100,0), "%</b>, ",
+                                                              "as well as the global average of <b>", round(avginfo$recycle_pc_global*100,0), "%</b> - but not by much! ",
+                                                              "</br></br>There is still room for improvement!", "</div>"))})
+      
+      userinfo$f_recycle_prop = 1
+    } else {
+      # Bad
       runjs(sprintf("
                     document.getElementById('%s').style.backgroundColor = '%s';
                     ", "p4_box_recycle_pc", "#ffcccc"))
-      userinfo$recycle_prop = 0
+      
+      output$p4_txt_user_recycle_pc = renderUI({HTML(paste0("<h3 style='color:Red; margin-top:10px; margin-bottom:0px'><b>", round(recycled_pc*100,0), "%</b></h3>"))})
+      
+      output$p4_txt_user_recycle_pc_2 = renderUI({HTML(paste0("<div style='font-size:16px;'>",
+                                                              "</br>You are recycling less than the global average of <b>", round(avginfo$recycle_pc_global*100,0), "%</b>. ",
+                                                              "</br></br><b>Please help us improve Australia's poor E-waste recycling rate of ", round(avginfo$recycle_pc_aus*100,0), "%!</b></div>"))})
+      
+      userinfo$f_recycle_prop = 0
     }
 
   })
   
-  # Write recycle% box contents..
-  # Image
-  # output$p4_img_status <- renderImage({
-  #   if(userinfo$recycle_prop == 0){
-  #     return(list(
-  #       # src = "www/mobile_small.png",
-  #       # contentType = "image/png"
-  #     ))
-  #   } else if(userinfo$recycle_prop == 1){
-  #     return(list(
-  #       # src = "www/laptop_small.png",
-  #       # contentType = "image/png"
-  #     ))
-  #   } else if(userinfo$recycle_prop == 2){
-  #     return(list(
-  #       # src = "www/tv_small.png",
-  #       # contentType = "image/png"
-  #     ))
-  #   }
-  # }, deleteFile = FALSE)
+  ################## Waste volume box ######################
+  observe({
+    
+    # Get e-waste to landfill volume.
+    waste_vol = Reduce("+",no_recycle())
+    
+    userinfo$waste_vol = waste_vol
+
+    # Colour background and generate text based on comparison to reference targets.
+    if (waste_vol < avginfo$waste_vol/(1-avginfo$recycle_pc_aus)*(1-avginfo$recycle_pc_global*2)){  # Aus recycle rate is low. Want to beat (approx) theoretical waste generated by aus household recycling @ double global rate before saying "good enough".
+      # Good
+      runjs(sprintf("
+                    document.getElementById('%s').style.backgroundColor = '%s';
+                    ", "p4_box_waste", "#ccffcc"))
+      
+      # Text outputs, good
+      output$p4_txt_user_waste = renderUI({HTML(paste0("<h3 style='color:DarkGreen; margin-top:10px; margin-bottom:0px'><b>", round(waste_vol,1), "kg</b></h3>"))})
+      
+      output$p4_txt_user_waste_2 = renderUI({HTML(paste0("<div style='font-size:16px;margin-top:20px'>",
+                                                         "An average Australian household your size would dump an incredible <b>", round(avginfo$waste_vol,1), "kg</b> of E-waste. ",
+                                                         "E-waste contains many toxic substances that can leech into soil and water systems.",
+                                                         "</br></br><b>Thank you for keeping your E-waste out of landfill!</b>"))})
+
+      userinfo$f_waste_vol = 2
+    }else if (waste_vol < avginfo$waste_vol){ # Beat aus household recycling at aus rate.
+      # Average
+      runjs(sprintf("
+                    document.getElementById('%s').style.backgroundColor = '%s';
+                    ", "p4_box_waste", "#ffff99"))
+
+      output$p4_txt_user_waste = renderUI({HTML(paste0("<h3 style='color:DarkOrange; margin-top:10px; margin-bottom:0px'><b>", round(waste_vol,1), "kg</b></h3>"))})
+      
+      output$p4_txt_user_waste_2 = renderUI({HTML(paste0("<div style='font-size:16px;margin-top:20px'>",
+                                                         "E-waste contains many toxic substances that can leech into soil and water systems. ",
+                                                         "An average Australian household your size would dump an incredible <b>", round(avginfo$waste_vol,1), "kg</b> of E-waste. ",
+                                                         "</br></br>You're doing better than this, but still sending a lot to landfill!</div>"))})
+      
+      userinfo$f_waste_vol = 1
+    } else {
+      # Bad
+      runjs(sprintf("
+                    document.getElementById('%s').style.backgroundColor = '%s';
+                    ", "p4_box_waste", "#ffcccc"))
+
+      output$p4_txt_user_waste = renderUI({HTML(paste0("<h3 style='color:Red; margin-top:10px; margin-bottom:0px'><b>", round(waste_vol,1), "kg</b></h3>"))})
+      
+      output$p4_txt_user_waste_2 = renderUI({HTML(paste0("<div style='font-size:16px;margin-top:20px'>",
+                                                         "This is more than an average Australian household your size, which would dump <b>", round(avginfo$waste_vol,1), "kg</b>. ",
+                                                         "E-waste contains many toxic substances that can leech into soil and water systems.",
+                                                         "</br></br><b>Please help us keep these harmful substances out of our ecosystems!</b>"))})
+
+      userinfo$f_waste_vol = 0
+    }
+    
+  })
+
+  
+  ################## Recycled volume box ######################
+  observe({
+    
+    # Get recycled materials volume
+    recycle_vol = Reduce("+",recycle())
+    
+    userinfo$recycle_vol = recycle_vol
+    
+    # Colour background and generate text based on comparison to reference targets.
+    if (recycle_vol > 2*(avginfo$recycle_vol/avginfo$recycle_pc_aus*avginfo$recycle_pc_global)){  # Aus recycle rate is low. Want to beat (approx) theoretical recycled materials generated by aus household recycling @ double global rate before saying "good enough".
+      # Good, normal method.
+      runjs(sprintf("
+                    document.getElementById('%s').style.backgroundColor = '%s';
+                    ", "p4_box_recycle_vol", "#ccffcc"))
+      
+      # Text outputs, good
+      output$p4_txt_user_recycle_vol = renderUI({HTML(paste0("<h3 style='color:DarkGreen; margin-top:10px; margin-bottom:0px'><b>", round(recycle_vol,1), "kg</b></h3>"))})
+      
+      output$p4_txt_user_recycle_vol_2 = renderUI({HTML(paste0("<div style='font-size:16px;margin-top:10px'>",
+                                                         "Your recycling allows a high volume of valuable materials to be recovered - much more than the average of <b>", round(avginfo$recycle_vol,1), "kg</b> for a household of your size! ",
+                                                         "</br>These materials go straight into the production of new products.",
+                                                         "</br></br><b>Thank you for helping Australia sustainably source materials!</b>"))})
+      
+      userinfo$f_recycle_vol = 2
+      
+    }else if (userinfo$f_recycle_prop == 2) { # A secondary way to trigger "good" rating - due to low household electronics usage but high recycling rate.
+      # Good, low electronics usage method.
+      
+      runjs(sprintf("
+                    document.getElementById('%s').style.backgroundColor = '%s';
+                    ", "p4_box_recycle_vol", "#ccffcc"))
+      
+      # Text outputs, good
+      output$p4_txt_user_recycle_vol = renderUI({HTML(paste0("<h3 style='color:DarkGreen; margin-top:10px; margin-bottom:0px'><b>", round(recycle_vol,1), "kg</b></h3>"))})
+      
+      output$p4_txt_user_recycle_vol_2 = renderUI({HTML(paste0("<div style='font-size:16px;margin-top:10px'>",
+                                                               "Almost all of the materials in electronics can be recovered through recycling.",
+                                                               "</br>These materials go straight into the production of new products.",
+                                                               "</br></br><b>Thank you for helping Australia sustainably source materials!</b>"))})
+      
+      userinfo$f_recycle_vol = 2
+
+    }else if (recycle_vol > avginfo$recycle_vol){  # Beat aus household recycling at aus rate.
+      # Average
+      runjs(sprintf("
+                    document.getElementById('%s').style.backgroundColor = '%s';
+                    ", "p4_box_recycle_vol", "#ffff99"))
+
+      output$p4_txt_user_recycle_vol = renderUI({HTML(paste0("<h3 style='color:DarkOrange; margin-top:10px; margin-bottom:0px'><b>", round(recycle_vol,1), "kg</b></h3>"))})
+
+      output$p4_txt_user_recycle_vol_2 = renderUI({HTML(paste0("<div style='font-size:16px;margin-top:10px'>",
+                                                         "Almost all of the materials in electronics can be recovered through recycling. These materials go straight into the production of new products.",
+                                                         " An average household of your size recovers <b>", round(avginfo$recycle_vol,1), "kg</b> of materials through recycling.",
+                                                         "</br></br>You're doing well, but can still improve!</div>"))})
+
+      userinfo$f_recycle_vol = 1
+    } else {
+      # Bad
+      runjs(sprintf("
+                    document.getElementById('%s').style.backgroundColor = '%s';
+                    ", "p4_box_recycle_vol", "#ffcccc"))
+
+      output$p4_txt_user_recycle_vol = renderUI({HTML(paste0("<h3 style='color:Red; margin-top:10px; margin-bottom:0px'><b>", round(recycle_vol,1), "kg</b></h3>"))})
+
+      output$p4_txt_user_recycle_vol_2 = renderUI({HTML(paste0("<div style='font-size:16px;margin-top:10px'>",
+                                                               "This is less than an average household of your size, which recovers <b>", round(avginfo$recycle_vol,1), "kg</b> of materials through recycling.",
+                                                               "</br>Almost all of the materials in electronics can be recovered through recycling.",
+                                                               "</br></br><b>Please consider recycling more to help Australia sustainably source materials!</b></div>"))})
+
+      userinfo$f_recycle_vol = 0
+    }
+    
+  })
   
   
   
@@ -459,29 +698,68 @@ server <- function(input, output, session)
   ################################################################
   observeEvent(input$btn_next1,
                {
-                 updateNavbarPage(session, "navBar", selected="page3")
-                 
-                 # Store waste items per 5 years.
-                 userdata$mobile = ifelse(input_val(input$in_mobile), 0, input$in_mobile * as.numeric(input$in_mobile_ror) * 5)
-                 userdata$tv = ifelse(input_val(input$in_tv), 0, input$in_tv * 0.725) # rate based on 6.9 year life cycle, as per 2018 NPD group market research: https://www.npd.com/wps/portal/npd/us/news/press-releases/2018/seven-percent-compound-annual-growth-expected-for-internet-connected-tv-devices-in-the-u-s--through-2021--forecasts-npd/
-                 userdata$desktop = ifelse(input_val(input$in_desktop), 0,input$in_desktop * 1) # Anectodal evidence (many sources) is 3-5 years. Assumption being made that monitor is replaced when box is replaced (ie, someone buying a full system). As tv's/monitors should be 6.9y as above, using 5y base.
-                 userdata$laptop = ifelse(input_val(input$in_laptop), 0,input$in_laptop * 1.42) # Anectodal evidence (many sources) is 3-4 years. 
-                 
-                 # Store raw user input.
-                 userdata_raw$mobile = ifelse(input_val(input$in_mobile), 0,input$in_mobile)
-                 userdata_raw$tv = ifelse(input_val(input$in_tv), 0,input$in_tv)
-                 userdata_raw$desktop = ifelse(input_val(input$in_desktop), 0,input$in_desktop)
-                 userdata_raw$laptop = ifelse(input_val(input$in_laptop), 0,input$in_laptop)
-                 
-                 # Store user info.
-                 userinfo$num_persons = ifelse(input_val(input$in_num_persons) | input$in_num_persons < 1, 1, as.integer(input$in_num_persons))
-                 
-                 plot_param$max_y = Reduce("+",no_recycle()) + Reduce("+",recycle())
+                 # Validation check 1
+                 if (input_inval(input$in_mobile) | input_inval(input$in_tv) | input_inval(input$in_desktop) | input_inval(input$in_laptop) | input_inval(input$in_num_persons)){
+                   output$p1_txt_input_valid = renderText({"Please enter valid numbers above."})         
+                 } else {
+                   output$p1_txt_input_valid = renderText({""})
+                   
+                   updateNavbarPage(session, "navBar", selected="page3")
+                   
+                   # Store waste items per 5 years.
+                   userdata$mobile = ifelse(input_inval(input$in_mobile), 0, input$in_mobile * as.numeric(input$in_mobile_ror) * 5)
+                   userdata$tv = ifelse(input_inval(input$in_tv), 0, input$in_tv * 0.725) # rate based on 6.9 year life cycle, as per 2018 NPD group market research: https://www.npd.com/wps/portal/npd/us/news/press-releases/2018/seven-percent-compound-annual-growth-expected-for-internet-connected-tv-devices-in-the-u-s--through-2021--forecasts-npd/
+                   userdata$desktop = ifelse(input_inval(input$in_desktop), 0,input$in_desktop * 1) # Anectodal evidence (many sources) is 3-5 years. Assumption being made that monitor is replaced when box is replaced (ie, someone buying a full system). As tv's/monitors should be 6.9y as above, using 5y base.
+                   userdata$laptop = ifelse(input_inval(input$in_laptop), 0,input$in_laptop * 1.42) # Anectodal evidence (many sources) is 3-4 years. 
+                   
+                   # Store raw user input.
+                   userdata_raw$mobile = ifelse(input_inval(input$in_mobile), 0,input$in_mobile)
+                   userdata_raw$tv = ifelse(input_inval(input$in_tv), 0,input$in_tv)
+                   userdata_raw$desktop = ifelse(input_inval(input$in_desktop), 0,input$in_desktop)
+                   userdata_raw$laptop = ifelse(input_inval(input$in_laptop), 0,input$in_laptop)
+                   
+                   # Store user info.
+                   userinfo$num_persons = ifelse(input_inval(input$in_num_persons) | input$in_num_persons < 1, 1, as.integer(input$in_num_persons))
+                   
+                   plot_param$max_y = Reduce("+",no_recycle()) + Reduce("+",recycle())
+                   
+                 }
                })
 
-  observeEvent(input$btn_next2,
+  observeEvent(input$btn_next3,
                {
                  updateNavbarPage(session, "navBar", selected="page3")
+                 
+                 ### Calculate average per-household metrics.
+                 # Calculate total items owned by household of size of user's.
+                 avg_mobile_vol = userinfo$num_persons * 1.1654 # Based on our iter2 model prediction of 2019 number of phones per person.
+                 avg_tv_vol = as.numeric(predict(lm_tv_persons, data.table(persons=userinfo$num_persons))) * tvph_scaleup # TV volume, based on model. See investigation.R code on github.
+                 avg_desktop_vol = desktop_pp*userinfo$num_persons # Based on expected per person values. See investigation.R
+                 avg_laptop_vol = laptop_pp*userinfo$num_persons  # Based on expected per person values. See investigation.R
+                 
+                 # Calculate volume of waste items generated in 5 years based on turnover rates explained for user data above.
+                 avg_mobile_vol = avg_mobile_vol * 0.556 * 5
+                 avg_tv_vol = avg_tv_vol* 0.725
+                 avg_desktop_vol = avg_desktop_vol * 1
+                 avg_laptop_vol = avg_laptop_vol * 1.42
+                 
+                 # Calculate average recycled volume
+                 avg_recycle <- avginfo$recycle_pc_aus *
+                   (avg_mobile_vol * mobile$recyclable +
+                   avg_tv_vol * tv$recyclable +
+                   avg_desktop_vol * desktop$recyclable +
+                   avg_laptop_vol * laptop$recyclable)
+                 
+                 # Calculate non-recycled volume. Total volume minus recycled volume.
+                 avg_waste = Reduce("+", desktop) * avg_desktop_vol +
+                   Reduce("+", laptop) * avg_laptop_vol + 
+                   Reduce("+", mobile) * avg_mobile_vol + 
+                   Reduce("+", tv) * avg_tv_vol -
+                   avg_recycle
+                 
+                 avginfo$recycle_vol = avg_recycle
+                 avginfo$waste_vol = avg_waste
+                   
                })
   
   observeEvent(input$btn_prev2,
