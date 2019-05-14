@@ -181,7 +181,7 @@ ui <- fluidPage(
           style = "padding-top: 40px;",
           align="center",
           actionButton("btn_next1", "Next", width = "25%", style = "background-color:green; color:white; font-weight:bold"),
-          div(textOutput("p1_txt_input_valid"), style="color:red;", align = "left")
+          div(textOutput("p1_txt_input_valid"), style="color:red; padding-top:5px", align = "center")
         )
       )
     ),
@@ -256,7 +256,7 @@ ui <- fluidPage(
               div
               (
                 id = "p3_div_mobile_no_recycle",
-                img(id="p3_img_mobile_no_recycle", src='mobile_small.png'),
+                img(id="p3_img_mobile_no_recycle", style='cursor: pointer;', src='mobile_small.png'),
                 htmlOutput("p3_txt_mobile_no_recycle")
               )
             ),
@@ -275,7 +275,7 @@ ui <- fluidPage(
               div
               (
                 id = "p3_div_mobile_recycle",
-                img(id="p3_img_mobile_recycle", src='mobile_small.png'),
+                img(id="p3_img_mobile_recycle", style='cursor: pointer;', src='mobile_small.png'),
                 htmlOutput("p3_txt_mobile_recycle")
               ),
               
@@ -301,7 +301,7 @@ ui <- fluidPage(
               div
               (
                 id = "p3_div_tv_no_recycle",
-                img(id="p3_img_tv_no_recycle", src='tv_small.png'),
+                img(id="p3_img_tv_no_recycle", style='cursor: pointer;', src='tv_small.png'),
                 htmlOutput("p3_txt_tv_no_recycle")
               )
             ),
@@ -321,7 +321,7 @@ ui <- fluidPage(
               div
               (
                 id = "p3_div_tv_recycle",
-                img(id="p3_img_tv_recycle", src='tv_small.png'),
+                img(id="p3_img_tv_recycle", style='cursor: pointer;', src='tv_small.png'),
                 htmlOutput("p3_txt_tv_recycle")
               )
             )          
@@ -338,7 +338,7 @@ ui <- fluidPage(
               div
               (
                 id = "p3_div_desktop_no_recycle",
-                img(id="p3_img_desktop_no_recycle", src='desktop_small.png'),
+                img(id="p3_img_desktop_no_recycle", style='cursor: pointer;', src='desktop_small.png'),
                 htmlOutput("p3_txt_desktop_no_recycle")
               )
             ),
@@ -357,7 +357,7 @@ ui <- fluidPage(
               div
               (
                 id = "p3_div_desktop_recycle",
-                img(id="p3_img_desktop_recycle", src='desktop_small.png'),
+                img(id="p3_img_desktop_recycle", style='cursor: pointer;', src='desktop_small.png'),
                 htmlOutput("p3_txt_desktop_recycle")
               )
             )          
@@ -375,7 +375,7 @@ ui <- fluidPage(
               div
               (
                 id = "p3_div_laptop_no_recycle",
-                img(id="p3_img_laptop_no_recycle", src='laptop_small.png'),
+                img(id="p3_img_laptop_no_recycle", style='cursor: pointer;', src='laptop_small.png'),
                 htmlOutput("p3_txt_laptop_no_recycle")
               )
             ),
@@ -394,7 +394,7 @@ ui <- fluidPage(
               div
               (
                 id = "p3_div_laptop_recycle",
-                img(id="p3_img_laptop_recycle", src='laptop_small.png'),
+                img(id="p3_img_laptop_recycle", style='cursor: pointer;', src='laptop_small.png'),
                 htmlOutput("p3_txt_laptop_recycle")
               )
             )          
@@ -436,14 +436,14 @@ ui <- fluidPage(
           width = 2,
           style = "padding-top: 0px; padding-bottom: 20px;",
           align="left",
-          actionButton("btn_prev3", "Back", width = "80%", style = "background-color:grey; color:white; font-weight:bold")
+          actionButton("btn_prev3", "Back", width = "100%", style = "background-color:#79d2a6; color:white; font-weight:bold")
         ),
         column
         (
           width = 8,
           style = "padding-top: 0px; padding-bottom: 20px;",
           align = "center",
-          actionButton("btn_next3", "Your Scorecard", width = "39%", style = "background-color:green; color:white; font-weight:bold")
+          actionButton("btn_next3", "Results", width = "39%", style = "background-color:green; color:white; font-weight:bold")
         )
       )
     ),
@@ -453,7 +453,7 @@ ui <- fluidPage(
     tabPanel
     (
       title = NULL, value = "page4",
-      # h1("Your household's E-waste report card", align = "center"),
+      # h1("Your household's E-waste score card", align = "center"),
 
       # Overall status box.
       fluidRow
@@ -463,7 +463,7 @@ ui <- fluidPage(
         style = "padding-left: 10px; padding-right: 10px;",
         align="center",
         
-        HTML("<h1><b>Your Household's E-waste Report Card</b></hl>"),
+        HTML("<h1><b>Your Household's E-waste Score Card</b></hl>"),
         HTML("<div style='height: 170px;padding-top:20px;'>"),
         imageOutput("p4_img_status"),
         HTML("</div>"),
@@ -533,7 +533,7 @@ ui <- fluidPage(
           width = 2,
           style = "padding-top: 10px; padding-bottom: 20px;",
           align="left",
-          actionButton("btn_prev4", "Back", width = "80%", style = "background-color:grey; color:white; font-weight:bold")
+          actionButton("btn_prev4", "Back", width = "100%", style = "background-color:#79d2a6; color:white; font-weight:bold")
         )
       )
     )

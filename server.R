@@ -139,9 +139,9 @@ server <- function(input, output, session)
   ############# Page 3 ##############
   ###################################
   ### Heading text output ###
-  output$p3_txt_heading <- renderUI({HTML(paste0("<h2>Your household will generate ",
+  output$p3_txt_heading <- renderUI({HTML(paste0("<h1>Your household will generate ",
                                                  "<br/><b><font color='red'>", round(plot_param$max_y,1), "kg </font></b>",
-                                                 "<br/>of E-waste in the next five years</h2>",
+                                                 "<br/>of E-waste in the next five years</h1>",
                                                  "<h3><font color='green'>Commit to recycling and see its impact below!</h3>"))})
   
   # Show correct ui objects based on if being recycled or not.
@@ -700,7 +700,7 @@ server <- function(input, output, session)
                {
                  # Validation check 1
                  if (input_inval(input$in_mobile) | input_inval(input$in_tv) | input_inval(input$in_desktop) | input_inval(input$in_laptop) | input_inval(input$in_num_persons)){
-                   output$p1_txt_input_valid = renderText({"Please enter valid numbers above."})         
+                   output$p1_txt_input_valid = renderText({"Please enter only numbers above."})         
                  } else {
                    output$p1_txt_input_valid = renderText({""})
                    
